@@ -8,7 +8,6 @@ from gptcache.utils import import_openai
 import_openai()
 
 import openai  # pylint: disable=C0413
-
 class OpenAI(BaseEmbedding):
     """Generate text embedding for given text using OpenAI.
 
@@ -26,18 +25,24 @@ class OpenAI(BaseEmbedding):
             encoder = OpenAI(api_key='your_openai_key')
             embed = encoder.to_embeddings(test_sentence)
     """
-
+    
+    
     def __init__(self, model: str = "text-embedding-ada-002", api_key: str = None, api_base: str = None):
+        
+        self.client = openai.OpenAI() # OpenAI client
+
         if not api_key:
             if openai.api_key:
                 api_key = openai.api_key
             else:
                 api_key = os.getenv("OPENAI_API_KEY")
         if not api_base:
-            if openai.api_base:
-                api_base = openai.api_base
+            if self.client._base_url:
+                api_base = self.client._base_url
             else:
                 api_base = os.getenv("OPENAI_API_BASE")
+                
+
         openai.api_key = api_key
         self.api_base = api_base  # don't override all of openai as we may just want to override for say embeddings
         self.model = model
@@ -54,7 +59,7 @@ class OpenAI(BaseEmbedding):
 
         :return: a text embedding in shape of (dim,).
         """
-        sentence_embeddings = openai.Embedding.create(model=self.model, input=data, api_base=self.api_base)
+        sentence_embeddings = self.client.embedding.create(model=self.model, input=data, api_base=self.api_base)
         return np.array(sentence_embeddings["data"][0]["embedding"]).astype("float32")
 
     @property
